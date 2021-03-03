@@ -1,0 +1,39 @@
+{
+  "manifest_version": 2,
+  "name": "Bricklink price checker",
+  "description": "View price of the lego piece",
+  "version": "1.0",
+  "homepage_url": "https://github.com/Scthe/bricklink-price-checker",
+  "icons": {
+    "48": "images/icon-48.png",
+    "96": "images/icon-96.png"
+  },
+
+  "content_security_policy": "script-src 'self'; object-src 'self'",
+
+  "content_scripts": [
+    {
+      "matches": ["*://www.bricklink.com/*"],
+      "js": ["./dist/content.js"]
+    }
+  ],
+
+  "background": {
+    "scripts": ["/dist/background.js"]
+  },
+
+  "applications": {
+    "gecko": {
+      "id": "bricklink-price-checker@example2.com",
+      "strict_min_version": "57.0"
+    }
+  },
+
+  "permissions": [
+    "activeTab",
+    "webRequest",
+    "storage",
+    "*://www.bricklink.com/v2/catalog/catalogitem.page",
+    "*://www.bricklink.com/*"
+  ]
+}
