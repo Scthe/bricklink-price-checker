@@ -1,5 +1,6 @@
 const browser = require("webextension-polyfill");
-import {setStyle, getNodeText} from "./utils";
+import { setStyle, getNodeText, forceTryCatch } from "./utils";
+import { fetchPartData } from "./content/fetchPartData";
 import * as Styles from "./content/styles";
 
 /*
@@ -21,18 +22,15 @@ Content script:
 
 */
 
-console.log("=== MY EXTENSION ===");
-
-window.addEventListener('load', (event) => {
+window.addEventListener('load', forceTryCatch(() => {
+  console.log("window.load callback")
   const listedItems = document.querySelectorAll(".store-items article.item");
 
   for (const itemEl of listedItems) {
     const itemName = getItemData(itemEl);
-    // console.log(itemName);
-
     addPriceCheckButton(itemEl, itemName);
   }
-});
+}));
 
 ///////////////////
 /// UTILS
@@ -69,7 +67,7 @@ function addPriceCheckButton(itemEl, itemName) {
   parentEl.appendChild(container);
 
   function onPriceCheck() {
-    console.log("clicked", itemName);
+    // console.log("clicked", itemName);
     getItemDetailsFromStoreRequest(itemName);
   }
 }
@@ -79,16 +77,14 @@ function getItemDetailsFromStoreRequest(itemName) {
     type: "GET_LISTING_DETAILS",
     data: itemName,
   };
-  console.log("sending query", message)
 
-  // browser.runtime.sendMessage(message, resp => {
-    // console.log("content script rcv response", resp)
-  // });
-  browser.runtime.sendMessage(message, function(response) {
-    console.log("RESP", response);
+  browser.runtime.sendMessage(message, response => {
+    console.log("Clicked", response);
+    fetchPartData({
+      idItem: response.itemID,
+      idColor: response.colorID, // if 0 or colorName is "", then???
+    })
+    .then(resp => console.log("prices", resp))
+    .catch(e =>  console.error("prices error", e))
   });
 }
-
-// browser.runtime.sendMessage({greeting: "hello"}, function(response) {
-  // console.log(response.farewell);
-// });
