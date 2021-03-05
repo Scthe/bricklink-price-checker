@@ -6,9 +6,7 @@ import { useLegoPart } from '../bricklink/useLegoPart';
 
 /*
 
-await fetch("https://store.bricklink.com/ajax/clone/store/searchitems.ajax?sort=6&pgSize=100&pg=2&wantedMoreArrayID=4991445%2C4991529%2C4991542%2C4991731&bOnWantedList=1&showHomeItems=0&sid=131458", {
-});
-
+TODO manifest permissions are too broad!
 
 Background script:
 1. Intercept store listing

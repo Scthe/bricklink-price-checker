@@ -9,31 +9,31 @@
     "96": "images/icon-96.png"
   },
 
-  "content_security_policy": "script-src 'self'; object-src 'self'",
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
 
   "content_scripts": [
     {
-      "matches": ["*://www.bricklink.com/*"],
-      "js": ["./dist/content.js"]
+      "matches": ["*://www.store.bricklink.com/*"],
+      "js": [
+        "./dist/contentScript.js"
+      ]
     }
   ],
 
   "background": {
-    "scripts": ["/dist/background.js"]
-  },
-
-  "applications": {
-    "gecko": {
-      "id": "bricklink-price-checker@example2.com",
-      "strict_min_version": "57.0"
-    }
+    "scripts": [
+      "/dist/background.js"
+    ]
   },
 
   "permissions": [
     "activeTab",
     "webRequest",
+    "webRequestBlocking",
     "storage",
     "*://www.bricklink.com/v2/catalog/catalogitem.page",
-    "*://www.bricklink.com/*"
+    "*://www.bricklink.com/*",
+    "*://www.store.bricklink.com/*",
+     "<all_urls>"
   ]
 }

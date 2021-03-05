@@ -8,7 +8,7 @@ module.exports = {
   mode: 'development',
 
   entry: {
-    content: './src/index.js',
+    contentScript: './src/contentScript.js',
     background: './src/background.js',
   },
 
@@ -21,7 +21,7 @@ module.exports = {
   module: {
     rules: [
       { test: /\.js$/, use: ['babel-loader'], exclude: /node_modules/, },
-      { test: /\.svg$/, use: ['svg-inline-loader'], exclude: /node_modules/, },
+      // { test: /\.svg$/, use: ['svg-inline-loader'], exclude: /node_modules/, },
     ],
   },
 
@@ -31,19 +31,20 @@ module.exports = {
       'src',
       'node_modules',
     ],
-    alias: {
-      images: path.resolve( __dirname, 'extension', 'images' ),
-    },
+    // alias: {
+      // images: path.resolve( __dirname, 'extension', 'images' ),
+    // },
   },
 
   plugins: [
     new webpack.DefinePlugin({
       'process.env.NODE_ENV': JSON.stringify('production'),
     }),
-    // new WebExtensionTarget(),
-    new RunChromeExtension({
-      extensionPath: path.join(path.resolve(__dirname), 'extension'),
-    })
+    // new RunChromeExtension({
+      // extensionPath: path.join(path.resolve(__dirname), 'extension'),
+      // startingUrl: 'https://store.bricklink.com/pb_bricks#/shop?o={%22sort%22:0,%22pgSize%22:100,%22showHomeItems%22:0}',
+      // autoReload: true,
+    // })
   ],
 
   devtool: 'eval-cheap-module-source-map',
