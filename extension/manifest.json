@@ -13,7 +13,9 @@
 
   "content_scripts": [
     {
-      "matches": ["*://www.store.bricklink.com/*"],
+      "matches": [
+        "https://store.bricklink.com/*"
+      ],
       "js": [
         "./dist/contentScript.js"
       ]

@@ -1,12 +1,15 @@
 const browser = require("webextension-polyfill");
 import {addRequestDoneListener} from "./background/addRequestDoneListener";
-import {pick} from "./utils";
+import {pick, equalStringCaseInsensitive} from "./utils";
 
 const ULR_FILTER = {
   urls: [
     "https://store.bricklink.com/ajax/clone/store/searchitems.ajax?*"
   ]
 };
+
+// TODO create class for this
+const RESPONSES_CACHE = {};
 
 const parseShopPageItemsResponse = data => {
   const isValidQueryValue = v => typeof v === "string" && v.length > 0;
@@ -42,9 +45,50 @@ const onShopPageItemsResponse = (requestDetails, dataRaw) => {
     }
   };
   console.log("data", data);
+  RESPONSES_CACHE[requestDetails.originUrl] = data;
 };
 
 addRequestDoneListener(
   onShopPageItemsResponse,
   ULR_FILTER,
 );
+
+const getItemListing = ({
+  originUrl, colorName, itemName
+}) => {
+  const listingRequest = RESPONSES_CACHE[originUrl] || {};
+  console.log("listingRequest", listingRequest)
+  const allItems = listingRequest?.listedItems || [];
+  const item = allItems.find(e => {
+    const matchesName = equalStringCaseInsensitive(e.itemName, itemName);
+    const matchesColor = colorName == null || equalStringCaseInsensitive(colorName, e.colorName);
+    if (matchesName) {
+      console.log("maybe", e);
+    }
+    return matchesName && matchesColor;
+  });
+  console.log("item", item)
+  return item;
+  // return {a: "asdasd"}
+}
+
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  const tabUrl = sender?.tab?.url;
+  if (!tabUrl) { return; }
+
+  console.log("RCV:", { tabUrl, message });
+
+  switch(message.type) {
+    case "GET_LISTING_DETAILS": {
+      const listingData = getItemListing({
+        originUrl: tabUrl,
+        ...message.data,
+      });
+      console.log("WILL response", listingData)
+      sendResponse(listingData);
+      break;
+    }
+    default:
+      console.error(`Unrecognised message`, message);
+  }
+});
