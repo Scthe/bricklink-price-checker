@@ -29,3 +29,28 @@ export const forceTryCatch = fn => (...args) => {
     throw e;
   }
 };
+
+/** seconds to miliseconds */
+export const fromSeconds = seconds => seconds * 1000;
+
+/** Cannot be used in extensions when relying on external requests.. */
+export const afterAllPageLoaded = cb => {
+  if (document.readyState === 'complete') {
+    cb();
+  } else {
+    window.addEventListener('load', cb);
+  }
+};
+
+
+/** Execute callback once checkFn returns true */
+export const executeAfterCondition = (checkFn, cb, timeoutMs) => {
+  const intervalId = setInterval(() => {
+    if (checkFn()) {
+      clearInterval(intervalId);
+      cb();
+    }
+  }, fromSeconds(1));
+
+  setTimeout(() => clearInterval(intervalId), timeoutMs);
+};

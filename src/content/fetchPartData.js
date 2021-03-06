@@ -42,11 +42,11 @@ export const fetchPartData = async ({
   // https://www.bricklink.com/v2/catalog/catalogitem_pgtab.page?idItem=444&idColor=7&st=2&gm=1&gc=0&ei=0&prec=2&showflag=0&showbulk=0&currency=114
   // https://www.bricklink.com/v2/catalog/catalogitem_pgtab.page?idItem=444&idColor=10&st=2&gm=1&gc=0&ei=0&prec=2&showflag=0&showbulk=0&currency=114
 
-  console.log('[REQUEST PART]', {
+  /*console.log('[REQUEST PART]', {
     idItem,
     idColor,
     currency,
-  });
+  });*/
 
   let url = `https://www.bricklink.com/v2/catalog/catalogitem_pgtab.page?idItem=${idItem}&st=2&gm=1&gc=0&ei=0&prec=2&showflag=0&showbulk=0`;
   if (idColor) {

@@ -1,5 +1,5 @@
 const browser = require("webextension-polyfill");
-import { setStyle, getNodeText, forceTryCatch } from "./utils";
+import { setStyle, getNodeText, forceTryCatch, afterAllPageLoaded, executeAfterCondition, fromSeconds } from "./utils";
 import { fetchPartData } from "./content/fetchPartData";
 import * as Styles from "./content/styles";
 
@@ -22,15 +22,21 @@ Content script:
 
 */
 
-window.addEventListener('load', forceTryCatch(() => {
-  console.log("window.load callback")
+
+const initialize = forceTryCatch(() => {
   const listedItems = document.querySelectorAll(".store-items article.item");
 
   for (const itemEl of listedItems) {
     const itemName = getItemData(itemEl);
     addPriceCheckButton(itemEl, itemName);
   }
-}));
+});
+
+executeAfterCondition(
+  () => document.querySelector(".store-items") != null,
+  initialize,
+  fromSeconds(90)
+);
 
 ///////////////////
 /// UTILS
@@ -61,14 +67,38 @@ function addPriceCheckButton(itemEl, itemName) {
   newBtnNode.setAttribute('type', 'button');
   newBtnNode.textContent = 'Check Price';
   setStyle(newBtnNode, Styles.PRICE_CHECK_BUTTON);
-  newBtnNode.addEventListener('click', onPriceCheck);
+  newBtnNode.addEventListener('click', forceTryCatch(onPriceCheck));
   container.appendChild(newBtnNode);
 
   parentEl.appendChild(container);
 
-  function onPriceCheck() {
-    // console.log("clicked", itemName);
-    getItemDetailsFromStoreRequest(itemName);
+  async function onPriceCheck() {
+    // TODO error handling when this throws
+    const {item, prices} = await getItemDetailsFromStoreRequest(itemName);
+    console.log("[Got prices]", {itemName, item, prices});
+
+    container.textContent = ''; // clear content
+
+    const linktoItemPageEl = document.createElement('a');
+    linktoItemPageEl.textContent = item.itemNo;
+    const colorParam = item.colorName.length > 0 ? `C=${item.colorID}` : "";
+    linktoItemPageEl.href = `https://www.bricklink.com/v2/catalog/catalogitem.page?${item.itemType}=${item.itemNo}#T=P&${colorParam}`;
+    linktoItemPageEl.target = "_blank";
+    linktoItemPageEl.rel = "”noopener noreferrer”";
+    container.appendChild(linktoItemPageEl);
+
+    addRow("Cheapest USED", prices.partsUsed[0]?.price || "-");
+    addRow("Cheapest NEW ", prices.partsNew[0]?.price || "-");
+  }
+
+  function addRow(label, price) {
+    const textEl = document.createElement("span");
+    textEl.textContent = `${label}: ${price}`;
+    setStyle(textEl, {
+      display: 'block',
+      color: "#3a3a3a",
+    });
+    container.appendChild(textEl);
   }
 }
 
@@ -78,13 +108,18 @@ function getItemDetailsFromStoreRequest(itemName) {
     data: itemName,
   };
 
-  browser.runtime.sendMessage(message, response => {
-    console.log("Clicked", response);
-    fetchPartData({
-      idItem: response.itemID,
-      idColor: response.colorID, // if 0 or colorName is "", then???
-    })
-    .then(resp => console.log("prices", resp))
-    .catch(e =>  console.error("prices error", e))
-  });
+  return new Promise((resolve, reject) => {
+    // there are too many ways this code can break (e.g. extension inter communication)
+    // to handle errors in nice way
+    const timeoutId = setTimeout(() => reject(), fromSeconds(20));
+
+    browser.runtime.sendMessage(message, async response => {
+      const prices = await fetchPartData({
+        idItem: response.itemID,
+        idColor: response.colorID, // if 0 or colorName is "", then???
+      });
+      resolve({item: response, prices});
+      clearTimeout(timeoutId);
+    });
+  })
 }

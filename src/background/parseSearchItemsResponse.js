@@ -11,7 +11,7 @@ const parseQuery = query => {
 
 const getListedItems = groups => {
   const propsToCopy = [
-    "itemID", "itemName",
+    "itemNo", "itemID", "itemName", "itemType",
     "colorID", "colorName",
     "invID", "invPrice", "invQty",
     "salePrice", "rawConvertedPrice"
