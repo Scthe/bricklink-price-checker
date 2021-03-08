@@ -32,10 +32,7 @@
     "activeTab",
     "webRequest",
     "webRequestBlocking",
-    "storage",
-    "*://www.bricklink.com/v2/catalog/catalogitem.page",
-    "*://www.bricklink.com/*",
-    "*://www.store.bricklink.com/*",
-     "<all_urls>"
+    "https://www.bricklink.com/*",
+    "https://store.bricklink.com/*"
   ]
 }

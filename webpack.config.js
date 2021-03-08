@@ -1,8 +1,12 @@
 const path = require('path');
 const webpack = require('webpack');
-// const ExtensionReloader  = require('webpack-extension-reloader');
-// const WebExtensionTarget = require('webpack-target-webextension');
-const RunChromeExtension = require('webpack-run-chrome-extension');
+
+// This is very good extension, but chrome only
+// const RunChromeExtension = require('webpack-run-chrome-extension');
+
+const createAbsPath = (...parts) => path.join(path.resolve(__dirname), ...parts);
+
+const DESTINATION_PATH =createAbsPath('extension', 'dist');
 
 module.exports = {
   mode: 'development',
@@ -13,15 +17,13 @@ module.exports = {
   },
 
   output: {
-    path: path.join(path.resolve(__dirname), 'extension', 'dist'),
-    // filename: '[name].js',
-    publicPath: 'extension/dist/',
+    path: DESTINATION_PATH,
+    publicPath: DESTINATION_PATH,
   },
 
   module: {
     rules: [
       { test: /\.js$/, use: ['babel-loader'], exclude: /node_modules/, },
-      // { test: /\.svg$/, use: ['svg-inline-loader'], exclude: /node_modules/, },
     ],
   },
 
@@ -31,41 +33,13 @@ module.exports = {
       'src',
       'node_modules',
     ],
-    // alias: {
-      // images: path.resolve( __dirname, 'extension', 'images' ),
-    // },
   },
 
   plugins: [
     new webpack.DefinePlugin({
       'process.env.NODE_ENV': JSON.stringify('production'),
     }),
-    // new RunChromeExtension({
-      // extensionPath: path.join(path.resolve(__dirname), 'extension'),
-      // startingUrl: 'https://store.bricklink.com/pb_bricks#/shop?o={%22sort%22:0,%22pgSize%22:100,%22showHomeItems%22:0}',
-      // autoReload: true,
-    // })
   ],
 
-  devtool: 'eval-cheap-module-source-map',
-
-  /*
-  devServer: {
-    // Have to write disk cause plugin cannot be loaded over network
-    writeToDisk: true,
-    compress: false,
-    hot: true,
-    hotOnly: true,
-    // WDS does not support chrome-extension:// browser-extension://
-    disableHostCheck: true,
-    injectClient: true,
-    injectHot: true,
-    headers: {
-      // We're doing CORS request for HMR
-      'Access-Control-Allow-Origin': '*',
-    },
-    // If the content script runs in https, webpack will connect https://localhost:HMR_PORT
-    https: false,
-  },
-  */
+  devtool: 'source-map',
 };

@@ -4,11 +4,11 @@ const matchesItem = (listingItem, itemQuery) => {
   const {colorName, itemName} = itemQuery;
   const matchesName = equalStringCaseInsensitive(listingItem.itemName, itemName);
   const matchesColor = colorName == null || equalStringCaseInsensitive(colorName, listingItem.colorName);
-  console.log({
+  /*console.log({
     itemQuery,
     itemName: listingItem.itemName,
     colorName: listingItem.colorName,
-  })
+  })*/
   return matchesName && matchesColor;
 }
 

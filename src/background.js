@@ -28,7 +28,7 @@ addRequestDoneListener(onShopPageItemsResponse, ULR_FILTER);
 
 const handleInterExtensionMessage = (message, sender, sendResponse) => {
   const tabUrl = sender?.tab?.url;
-  console.log("RCV:", { tabUrl, message });
+  console.log("Message:", { tabUrl, message });
   if (!tabUrl) { return; }
 
   switch(message.type) {

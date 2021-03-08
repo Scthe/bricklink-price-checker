@@ -1,34 +1,20 @@
 const browser = require("webextension-polyfill");
-import { setStyle, getNodeText, forceTryCatch, afterAllPageLoaded, executeAfterCondition, fromSeconds } from "./utils";
+import {
+  forceTryCatch, fromSeconds, executeAfterCondition,
+  getNodeText, clearChildren, createElement,
+} from "./utils";
 import { fetchPartData } from "./content/fetchPartData";
+import * as ui from "./content/ui";
 import * as Styles from "./content/styles";
-
-/*
-
-TODO manifest permissions are too broad!
-
-Background script:
-1. Intercept store listing
-2. read store name from referrer, rest of data from response
-3. cache this entry
-
-Content script:
-1. user clicks to get element info
-2. detect element from HTML
-3. detect shop from url, check url params
-4. query background script for shop entry list
-4.1. if not found, tell user to refresh the page
-5. find clicked item in shop list to read idItem and color, maybe currency code
-
-*/
-
 
 const initialize = forceTryCatch(() => {
   const listedItems = document.querySelectorAll(".store-items article.item");
 
   for (const itemEl of listedItems) {
     const itemName = getItemData(itemEl);
-    addPriceCheckButton(itemEl, itemName);
+    if (itemName != null) {
+      addPriceCheckButton(itemEl, itemName);
+    }
   }
 });
 
@@ -50,75 +36,70 @@ function getItemData(itemEl) {
       itemName: getNodeText(itemNameEl[1]),
     };
   }
-  return {
-    colorName: undefined,
-    itemName: getNodeText(itemNameEl[0]),
-  };
+  if (itemNameEl.length === 1) {
+    return {
+      colorName: undefined,
+      itemName: getNodeText(itemNameEl[0]),
+    };
+  }
+  return null;
 }
 
 function addPriceCheckButton(itemEl, itemName) {
   const cartBtnEl = itemEl.querySelector(".addToCart");
   const parentEl = cartBtnEl.parentNode;
 
-  const container = document.createElement("div");
-  setStyle(container, Styles.CONTAINER);
+  const container = createElement(parentEl, "div", {
+    style: Styles.CONTAINER,
+  });
 
-  const newBtnNode = document.createElement("button");
-  newBtnNode.setAttribute('type', 'button');
-  newBtnNode.textContent = 'Check Price';
-  setStyle(newBtnNode, Styles.PRICE_CHECK_BUTTON);
-  newBtnNode.addEventListener('click', forceTryCatch(onPriceCheck));
-  container.appendChild(newBtnNode);
-
-  parentEl.appendChild(container);
-
-  async function onPriceCheck() {
-    // TODO error handling when this throws
-    const {item, prices} = await getItemDetailsFromStoreRequest(itemName);
-    console.log("[Got prices]", {itemName, item, prices});
-
-    container.textContent = ''; // clear content
-
-    const linktoItemPageEl = document.createElement('a');
-    linktoItemPageEl.textContent = item.itemNo;
-    const colorParam = item.colorName.length > 0 ? `C=${item.colorID}` : "";
-    linktoItemPageEl.href = `https://www.bricklink.com/v2/catalog/catalogitem.page?${item.itemType}=${item.itemNo}#T=P&${colorParam}`;
-    linktoItemPageEl.target = "_blank";
-    linktoItemPageEl.rel = "”noopener noreferrer”";
-    container.appendChild(linktoItemPageEl);
-
-    addRow("Cheapest USED", prices.partsUsed[0]?.price || "-");
-    addRow("Cheapest NEW ", prices.partsNew[0]?.price || "-");
-  }
-
-  function addRow(label, price) {
-    const textEl = document.createElement("span");
-    textEl.textContent = `${label}: ${price}`;
-    setStyle(textEl, {
-      display: 'block',
-      color: "#3a3a3a",
-    });
-    container.appendChild(textEl);
-  }
+  ui.renderCheckPriceButton(container, {
+    onClick: createPriceCheckHandler(container, itemName),
+  });
 }
 
-function getItemDetailsFromStoreRequest(itemName) {
-  const message = {
-    type: "GET_LISTING_DETAILS",
-    data: itemName,
-  };
+function createPriceCheckHandler (container, clickedItem) {
+  let loaderEl;
 
+  return forceTryCatch(async () => {
+    try {
+      clearChildren(container);
+      loaderEl = ui.renderLoader(container);
+
+      const item = await getItemDetailsFromStoreRequest(clickedItem);
+      ui.renderPartLink(container, {part: item});
+
+      const prices = await fetchPartData({
+        idItem: item.itemID,
+        idColor: item.colorID,
+      });
+      ui.renderPriceDetails(container, {item, prices});
+    } catch (e) {
+      console.log(e);
+      // No `clearChildren(container);`. Render below whatever was OK
+      ui.renderErrorMessage(container, {
+        text: "Error, could not get the prices"
+      });
+      throw e;
+    } finally {
+      container.removeChild(loaderEl);
+    }
+  });
+};
+
+/** Get clicked item details from store listing AJAX using background script */
+function getItemDetailsFromStoreRequest(clickedItem) {
+  // there are too many ways this code can break (e.g. extension inter communication)
+  // to handle errors in nice way
   return new Promise((resolve, reject) => {
-    // there are too many ways this code can break (e.g. extension inter communication)
-    // to handle errors in nice way
     const timeoutId = setTimeout(() => reject(), fromSeconds(20));
 
+    const message = {
+      type: "GET_LISTING_DETAILS",
+      data: clickedItem,
+    };
     browser.runtime.sendMessage(message, async response => {
-      const prices = await fetchPartData({
-        idItem: response.itemID,
-        idColor: response.colorID, // if 0 or colorName is "", then???
-      });
-      resolve({item: response, prices});
+      resolve(response);
       clearTimeout(timeoutId);
     });
   })

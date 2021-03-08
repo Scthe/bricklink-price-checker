@@ -5,11 +5,44 @@ export const pick = (obj, props) => props.reduce(
   {}
 );
 
-export const setStyle = (itemEl, styleProps) => {
+const setStyle = (itemEl, styleProps = {}) => {
   Object.keys(styleProps).forEach(key => {
     itemEl.style[key] = styleProps[key];
   });
 }
+
+const setChildren = (nodeEl, children) => {
+  if(children == null) {
+    return;
+  } else if (typeof children === "string") {
+    nodeEl.textContent = children;
+  } else {
+    throw new Error("Unsupported children attribute type")
+  }
+}
+
+export const createElement = (parent, tagName, props) => {
+  const nodeEl = document.createElement(tagName);
+
+  const {style, children, ...attributes} = props;
+  setStyle(nodeEl, style);
+  setChildren(nodeEl, children);
+
+  Object.entries(attributes).forEach(([key_, value]) => {
+    const key = key_.toLowerCase();
+    if (key.startsWith("on")) {
+      const evName = key.substring(2);
+      nodeEl.addEventListener(evName, value);
+    } else {
+      nodeEl[key] = value;
+    }
+  });
+
+  parent.appendChild(nodeEl);
+  return nodeEl;
+};
+
+export const clearChildren = nodeEl => { nodeEl.textContent = ''; }
 
 export const getNodeText = itemEl =>
   itemEl.textContent.trim()
